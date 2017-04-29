@@ -142,25 +142,26 @@ void ParticleFilter::resample() {
 
     static std::default_random_engine gen;
 
-    // Setup the random bits
-    double max_weight = 0;
-    for (std::vector<Particle>::const_iterator particle = particles.begin(); particle != particles.end(); ++particle) {
-        if (particle->weight > max_weight) {
-            max_weight = particle->weight;
+    // Calculate largest weight
+    double weight_max = 0;
+    for (std::vector<Particle>::const_iterator particle = particles.begin(); particle < particles.end(); ++particle) {
+        if (particle->weight > weight_max) {
+            weight_max = particle->weight;
         }  // end if
     }  // end for
 
-    std::uniform_int_distribution<size_t> uniform_start(0, particles.size() - 1);
-    std::uniform_real_distribution<double> uniform_spin(0, 2 * max_weight);
+    std::uniform_int_distribution<size_t> uniform_particle_index(0, particles.size() - 1);
+    std::uniform_real_distribution<double> uniform_spin(0, 2 * weight_max);
 
-    size_t index = uniform_start(gen);
+    size_t index = uniform_particle_index(gen);
     double beta = 0;
 
-    std::vector<Particle> new_particles;
+    std::vector<Particle> resampled_particles;
 
-    new_particles.reserve(particles.size());
+    resampled_particles.reserve(particles.size());
 
     for (size_t i = 0; i < particles.size(); ++i) {
+        // adding uniformely drawn continous value
         beta += uniform_spin(gen);
 
         while (particles[index].weight < beta) {
@@ -168,16 +169,17 @@ void ParticleFilter::resample() {
             index = (index + 1) % particles.size();
         }
 
-        Particle new_particle;
-        new_particle.id = -1;
-        new_particle.x = particles[index].x;
-        new_particle.y = particles[index].y;
-        new_particle.theta = particles[index].theta;
-        new_particle.weight = 1;
-        new_particles.push_back(new_particle);
+        // append new particle
+        Particle particle_new;
+        particle_new.id = -1;
+        particle_new.x = particles[index].x;
+        particle_new.y = particles[index].y;
+        particle_new.theta = particles[index].theta;
+        particle_new.weight = 1;
+        resampled_particles.push_back(particle_new);
     }
 
-    particles = new_particles;
+    particles = resampled_particles;
 }
 
 void ParticleFilter::write(std::string filename) {
